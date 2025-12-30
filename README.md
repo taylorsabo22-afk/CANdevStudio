@@ -13,6 +13,7 @@
   * [Windows](#windows)
     * [Visual Studio 2019 Win64](#visual-studio-2019-win64)
   * [macOS / OS X](#macos--os-x)
+  * [Android](#android)
 * [Prebuilt packages](#prebuilt-packages)
   * [Download](#download)
   * [Package naming](#package-naming)
@@ -53,6 +54,7 @@ Current list of devices compatible with SocketCAN (Linux only) can be found [her
 * Linux
 * Windows
 * macOS
+* Android
 
 ## Build instructions
 CANdevStudio project uses GitHub Actions as continuous integration environment. You can check [build.yml](https://github.com/GENIVI/CANdevStudio/blob/master/.github/workflows/build.yml) for details. 
@@ -119,6 +121,54 @@ cmake -S. -Bbuild -GNinja -DCMAKE_PREFIX_PATH=$(brew --prefix qt5)/lib/cmake
 cd build
 ninja
 ```
+### Android
+#### Prerequisites
+* Android SDK and NDK (r21 or later recommended)
+* Qt for Android (5.12 or later)
+* CMake 3.7 or later
+
+#### Build steps
+Building for Android requires cross-compilation. You need to specify the Android toolchain and Qt for Android installation path.
+
+```
+git clone https://github.com/GENIVI/CANdevStudio.git
+cd CANdevStudio
+git submodule update --init --recursive
+mkdir build-android
+cd build-android
+
+# Configure CMake with Android toolchain
+cmake .. \
+  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
+  -DANDROID_ABI=armeabi-v7a \
+  -DANDROID_PLATFORM=android-23 \
+  -DCMAKE_PREFIX_PATH=$QT_ANDROID/lib/cmake \
+  -DCMAKE_FIND_ROOT_PATH=$QT_ANDROID \
+  -DWITH_TESTS=OFF \
+  -DQt5_DIR=$QT_ANDROID/lib/cmake/Qt5 \
+  -DQt5Core_DIR=$QT_ANDROID/lib/cmake/Qt5Core
+
+# Build
+make
+
+# Create APK (requires androiddeployqt from Qt installation)
+make install
+$QT_ANDROID/bin/androiddeployqt \
+  --input android-CANdevStudio-deployment-settings.json \
+  --output android-build \
+  --android-platform android-30 \
+  --jdk /usr/lib/jvm/java-11-openjdk-amd64 \
+  --gradle
+```
+
+Replace the following placeholders:
+* `$ANDROID_NDK` - Path to Android NDK installation
+* `$QT_ANDROID` - Path to Qt for Android installation (e.g., `~/Qt/5.15.2/android`)
+
+**Note:** For ARM64 devices, use `-DANDROID_ABI=arm64-v8a`. For x86 emulators, use `-DANDROID_ABI=x86` or `-DANDROID_ABI=x86_64`.
+
+The APK file will be created in the `android-build/build/outputs/apk/` directory.
+
 ## Prebuilt packages
 Each GitHub Actions job stores prebuilt packages for 90 days. Additionally official releases are stored on GitHub Releases page.
 ### Package naming

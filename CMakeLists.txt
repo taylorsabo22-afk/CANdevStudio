@@ -27,7 +27,16 @@ if(NOT CMAKE_INSTALL_LIBDIR)
 endif()
 message(STATUS "CMAKE_INSTALL_LIBDIR: '${CMAKE_INSTALL_LIBDIR}'")
 
-if(UNIX)
+if(ANDROID)
+    message(STATUS "Configuring for Android platform")
+    set(INSTALL_DEST_LIB libs/${ANDROID_ABI})
+    set(INSTALL_DEST_BIN libs/${ANDROID_ABI})
+    set(INSTALL_DEST_PLUG libs/${ANDROID_ABI})
+    # Android APK packaging
+    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/android" CACHE INTERNAL "")
+    set(ANDROID_VERSION_NAME "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" CACHE INTERNAL "")
+    set(ANDROID_VERSION_CODE 1 CACHE INTERNAL "")
+elseif(UNIX)
     if(STANDALONE)
         set(INSTALL_DEST_LIB CANdevStudio)
         set(INSTALL_DEST_BIN CANdevStudio)
@@ -52,6 +61,9 @@ find_package(Qt5Svg ${QT_REQUIRED_VERSION} REQUIRED)
 find_package(Qt5Qml ${QT_REQUIRED_VERSION} REQUIRED)
 find_package(Qt5Quick ${QT_REQUIRED_VERSION} REQUIRED)
 find_package(Qt5QuickWidgets ${QT_REQUIRED_VERSION} REQUIRED)
+if(ANDROID)
+    find_package(Qt5AndroidExtras ${QT_REQUIRED_VERSION} REQUIRED)
+endif()
 message(STATUS "Qt Version found: ${Qt5Core_VERSION}")
 
 set_property(TARGET Qt5::SerialBus PROPERTY INTERFACE_COMPILE_FEATURES "")
@@ -111,6 +123,18 @@ configure_file(
   ${CMAKE_BINARY_DIR}/generated/version.h
 )
 # end of version Handling
+
+# Disable tests and tools for Android by default
+if(ANDROID)
+    if(WITH_TESTS)
+        message(STATUS "Tests are disabled for Android builds by default")
+        set(WITH_TESTS OFF CACHE BOOL "Build with test" FORCE)
+    endif()
+    if(WITH_TOOLS)
+        message(STATUS "Tools are disabled for Android builds")
+        set(WITH_TOOLS OFF CACHE BOOL "Build tools directory" FORCE)
+    endif()
+endif()
 
 if(WITH_TESTS OR WITH_COVERAGE)
     enable_testing()
